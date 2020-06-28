@@ -15,6 +15,10 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import spotipy.util as util
 import spotipy.oauth2 as oauth2
+import urllib
+import PIL
+from PIL import ImageTk
+#from PIL import Image
 
 
 CLIENT_ID = "c9ff2cb5f43c4ec9b0f1c29767ad5cba"
@@ -24,22 +28,47 @@ redirect_uri = "http://localhost:8888/callback/"
 username = "myUsername"
 #scope = "user-read-currently-playing"
 #scope = "user-top-read"
-scope = "user-modify-playback-state"
+scope_playback = "user-modify-playback-state"
+scope_info = "playlist-read-private"
 
 credentials = oauth2.SpotifyClientCredentials(
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET)
 
-token = util.prompt_for_user_token(username, scope, CLIENT_ID, CLIENT_SECRET, redirect_uri)
-spotify = spotipy.Spotify(auth=token)
+token_playback = util.prompt_for_user_token(username, scope_playback, CLIENT_ID, CLIENT_SECRET, redirect_uri)
+token_info = util.prompt_for_user_token(username, scope_info, CLIENT_ID, CLIENT_SECRET, redirect_uri)
 
+spotify_playback = spotipy.Spotify(auth=token_playback)
+spotify_info = spotipy.Spotify(auth=token_info)
+
+
+#user = "lucyliu_0203?si=_Q11MTWQRLaAD5YqgQEqBA"
+user = "lucyliu_0203"
 #print(spotify.current_user_playing_track())
 #spotify.pause_playback(device_id=None)
-spotify.start_playback(device_id=None, context_uri="spotify:playlist:6uL45FD5RZpw3sEBgev3lG", uris=None, offset=None, position_ms=None)
+#spotify.start_playback(device_id=None, context_uri="spotify:playlist:6uL45FD5RZpw3sEBgev3lG", uris=None, offset=None, position_ms=None)
+NUM_PLAYLISTS = len(spotify_info.user_playlists(user, limit=50, offset=0)['items'])
+PLAYLIST_INFO = spotify_info.user_playlists(user, limit=50, offset=0)
+print(NUM_PLAYLISTS)
+'''for i in range(NUM_PLAYLISTS):
+    print(PLAYLIST_INFO['items'][i]['uri'])
+'''
+RANDOM_PLAYLISTS = []
+PLAYLIST_COVERS = []
+
+for j in range(5):
+    num = random.randint(0,NUM_PLAYLISTS-1)
+    RANDOM_PLAYLISTS.append(PLAYLIST_INFO['items'][num])
+    cover_url = spotify_info.playlist_cover_image(PLAYLIST_INFO['items'][num]['uri'])[0]["url"]
+
+    urllib.request.urlretrieve(str(cover_url), PLAYLIST_INFO['items'][num]['name'] + ".png")
+    PLAYLIST_COVERS.append(PLAYLIST_INFO['items'][num]['name'] + ".png")
+
+
+#print(RANDOM_PLAYLISTS)
+
 
 #print(spotify.current_user_top_tracks(limit=20, offset=0, time_range='short_term')["items"]["name"])
-
-
 
 FONT_TIMER = ("Courier", 40)
 FONT_BUTTON = ("System", 15, "bold")
@@ -70,6 +99,8 @@ class testGUI:
         self.rest_circuits_entry = self.question("Enter rest time inbetween circuits: ",17)
 
         self.start_button = tk.Button(master, text="Start", width = 5,bg ="#b8e8f2",font = FONT_START,command = self.check_all_inputs)
+        self.start_button.grid(row = 30)
+        self.start_button = tk.Button(master, text="music", width = 5,bg ="#b8e8f2",font = FONT_START,command = self.music_page)
         self.start_button.grid(row = 30)
         self.reset_button = tk.Button(master, text="Reset", width = 5, bg ="#b8e8f2",font = FONT_BUTTON,command = self.reset)
         self.reset_button.grid(row = 35)
@@ -102,6 +133,9 @@ class testGUI:
         self.variable = tk.StringVar(self.master)
         
         self.drop_down_menu(OPTION_LIST, 25)
+
+        self.photo = ImageTk.PhotoImage(Image.open("High_Hopes.png"))  # PIL solution
+
 
         self.ACTIVE_TIME = 0
         self.REST_TIME = 0
@@ -216,6 +250,18 @@ class testGUI:
 
 
         #self.start(int(active_time), int(rest_time), int(num_sets), int(num_circuits), int(rest_circuits))
+
+    def music_page(self):
+        for widget in self.master.winfo_children():
+           widget.grid_forget()
+        
+        #photo = PhotoImage(file = r"C:\Users\lucyy\Desktop\train.py\nothing_but_country.jpg") 
+        self.start_button = tk.Button(self.master, image = self.photo, width = 20,height = 20, command = self.play_music)
+        self.start_button.pack(side = TOP)
+
+
+    def play_music(self):
+        spotify_playback.start_playback(device_id=None, context_uri="spotify:playlist:6uL45FD5RZpw3sEBgev3lG", uris=None, offset=None, position_ms=None)
 
     def start_workout(self):
         if (self.choose == True):
